@@ -40,4 +40,42 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    And(a = instruction[15], b = instruction[15], out = iBit);
+    Not(in = iBit, out = notIBit);
+    And(a = instruction[12], b = instruction[12], out = aBit);
+    And(a = instruction[11], b = instruction[11], out = c1Bit);
+    And(a = instruction[10], b = instruction[10], out = c2Bit);
+    And(a = instruction[9], b = instruction[9], out = c3Bit);
+    And(a = instruction[8], b = instruction[8], out = c4Bit);
+    And(a = instruction[7], b = instruction[7], out = c5Bit);
+    And(a = instruction[6], b = instruction[6], out = c6Bit);
+    And(a = instruction[15], b = instruction[5], out = d1Bit);
+    And(a = instruction[15], b = instruction[4], out = d2Bit);
+    And(a = instruction[15], b = instruction[3], out = writeM, out = writeMBit);
+    And(a = instruction[2], b = instruction[2], out = j1Bit);
+    And(a = instruction[1], b = instruction[1], out = j2Bit);
+    And(a = instruction[0], b = instruction[0], out = j3Bit);
+
+    Or(a = iBit, b = notIBit, out = one);
+    Not16(in = instruction, out = notInstruction);
+    And16(a = instruction, b = notInstruction, out = AllZero);
+
+    And(a = instruction[15], b = instruction[5], out = areg);
+    Or(a = notIBit, b = areg, out = AregBit);
+
+    Mux16(a = instruction, b = outALU, sel = iBit, out = outMux1);
+    ARegister(in = outMux1, load = AregBit, out = outARegister, out[0..14] = addressM);
+    Mux16(a = outARegister, b = inM, sel = aBit, out = outMux2);
+    ALU(x =outDRegister, y = outMux2, zx = c1Bit, nx = c2Bit, zy = c3Bit, ny = c4Bit, f = c5Bit, no = c6Bit, out = outALU, zr = outZr, ng = outNg); 
+    Mux16(a = AllZero, b = outALU, sel = writeMBit, out = outM);
+    DRegister(in = outALU, load = d2Bit, out = outDRegister);
+    Xor(a = outZr, b = outNg, out = NegPs);
+    Not(in = NegPs, out = outPs);
+    And(a = outNg, b = j1Bit, out = NgBit);
+    And(a = outZr, b = j2Bit, out = ZrBit);
+    And(a = outPs, b = j3Bit, out = PsBit); 
+    Or(a = NgBit, b = ZrBit, out = NgOrZr);
+    Or(a = NgOrZr, b = PsBit, out = NgOrZrOrPs);
+    Mux(a = iBit, b = NgOrZrOrPs, sel = iBit, out = jumpBit);
+    PC(in = outARegister, load = jumpBit, inc = one, reset = reset, out[0..14] = pc);
 }
