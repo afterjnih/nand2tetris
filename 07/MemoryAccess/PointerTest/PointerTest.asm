@@ -11,7 +11,6 @@ D=M
 @THIS
 M=D
 @SP
-@SP
 A=M-1
 D=M
 @R5
@@ -30,7 +29,6 @@ A=M-1
 D=M
 @THAT
 M=D
-@SP
 @SP
 A=M-1
 D=M
