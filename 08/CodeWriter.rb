@@ -254,6 +254,97 @@ class CodeWriter
     @asm_file.puts 'D;JNE'
   end
 
+  def writeCall(functionName, numArgs)
+    @asm_file.puts '@return_address_' + n.to_s
+    @asm_file.puts 'D=A+1'
+    push_on_stack
+    @asm_file.puts '@LCL'
+    @asm_file.puts 'D=M'
+    push_on_stack
+    @asm_file.puts '@ARG'
+    @asm_file.puts 'D=M'
+    push_on_stack
+    @asm_file.puts '@THIS'
+    @asm_file.puts 'D=M'
+    push_on_stack
+    @asm_file.puts '@THAT'
+    @asm_file.puts 'D=M'
+    push_on_stack
+    @asm_file.puts '@SP'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@LCL'
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@5'
+    @asm_file.puts 'D=D-A'
+    @asm_file.puts '@ARG'
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@' + functionName
+    @asm_file.puts '0;JMP'
+    @asm_file.puts '(return_address_' + n.to_s + ')'
+  end
+
+  def writeReturn
+    @asm_file.puts '@LCL'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@R13' #FRAME
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@5'
+    @asm_file.puts 'A=D-A'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@R14' #RET
+    @asm_file.puts 'M=D'
+
+    pop
+    @asm_file.puts '@ARG'
+    @asm_file.puts 'A=M'
+    @asm_file.puts 'M=D'
+
+    @asm_file.puts '@ARG'
+    @asm_file.puts 'D=M+1'
+    @asm_file.puts '@SP'
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@13'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@1'
+    @asm_file.puts 'A=D-A'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@THAT'
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@13'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@2'
+    @asm_file.puts 'A=D-A'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@THIS'
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@13'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@3'
+    @asm_file.puts 'A=D-A'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@ARG'
+    @asm_file.puts 'M=D'
+    @asm_file.puts '@13'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@4'
+    @asm_file.puts 'A=D-A'
+    @asm_file.puts 'D=M'
+    @asm_file.puts '@LCL'
+    @asm_file.puts 'M=D'
+
+    @asm_file.puts '@R14'
+    @asm_file.puts 'A=M'
+    @asm_file.puts '0;JMP'
+  end
+
+  def writeFunction(functionName, numLocals)
+    writeLabel(functionName)
+    numLocals.times do
+      @asm_file.puts 'D=0'
+      push_on_stack
+    end
+  end
+
   def close
     @asm_file.close
   end

@@ -1,0 +1,13 @@
+@10
+D=A
+@11
+D=A
+(HELLO)
+@12
+D=A
+@13
+D=A
+@HELLO
+0;JMP
+@14
+D=A

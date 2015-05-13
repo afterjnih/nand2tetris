@@ -17,8 +17,11 @@ def convert(vm_file, code_writer)
     when 'C_IF'
       code_writer.writeIf(parser.arg1)
     when 'C_FUNCTION'
+      code_writer.writeFunction(parser.arg1, parser.arg2)
     when 'C_RETURN'
+      code_writer.writeReturn
     when 'C_CALL'
+      code_writer.writeCall(parser.arg1, parser.arg2)
     end
   end
   code_writer.close
