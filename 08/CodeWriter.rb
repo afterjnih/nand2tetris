@@ -1,7 +1,13 @@
 class CodeWriter
   def initialize(file_name)
     @asm_file = File.open(file_name, 'w')
+    @asm_file.puts '@261'
+    @asm_file.puts 'D=A'
+    @asm_file.puts '@SP'
+    @asm_file.puts 'M=D'
     @i = 0
+    @return_address_number = 0
+    @function_list = []
   end
 
   def setFileName(file_name)
@@ -173,7 +179,7 @@ class CodeWriter
         @asm_file.puts 'D=M'
         push_on_stack
       when 'static'
-        @asm_file.puts '@' + @asm_file_name + '.' + index.to_s
+        @asm_file.puts '@' + @asm_file_name.split('.')[0] + '.' + index.to_s
         # @asm_file.puts '@' + (16 + index).to_s
         @asm_file.puts 'D=M'
         push_on_stack
@@ -209,7 +215,7 @@ class CodeWriter
         @asm_file.puts 'M=M-1'
       when 'static'
         pop
-        @asm_file.puts '@' + @asm_file_name + '.' + index.to_s
+        @asm_file.puts '@' + @asm_file_name.split('.')[0] + '.' + index.to_s
         # @asm_file.puts '@' + (16 + index).to_s
         @asm_file.puts 'M=D'
         @asm_file.puts '@SP'
@@ -238,11 +244,20 @@ class CodeWriter
   end
 
   def writeLabel(label)
-    @asm_file.puts '(' + label + ')'
+    if @function_list.empty?
+      @asm_file.puts '(' + label + ')'
+    else
+      @asm_file.puts '(' + @function_list[-1] + '$' + label + ')'
+      p '(' + @function_list[-1] + '$' + label + ')'
+    end
   end
 
   def writeGoto(label)
-    @asm_file.puts '@' + label
+    if @function_list.empty?
+      @asm_file.puts '@' + label
+    else
+      @asm_file.puts '@' + @function_list[-1] + '$' + label
+    end
     @asm_file.puts '0;JMP'
   end
 
@@ -250,12 +265,16 @@ class CodeWriter
     pop
     @asm_file.puts '@SP'
     @asm_file.puts 'M=M-1'
-    @asm_file.puts '@' + label
+    if @function_list.empty?
+      @asm_file.puts '@' + label
+    else
+      @asm_file.puts '@' + @function_list[-1] + '$' + label
+    end
     @asm_file.puts 'D;JNE'
   end
 
   def writeCall(functionName, numArgs)
-    @asm_file.puts '@return_address_' + n.to_s
+    @asm_file.puts '@return_address_' + @return_address_number.to_s
     @asm_file.puts 'D=A+1'
     push_on_stack
     @asm_file.puts '@LCL'
@@ -274,13 +293,14 @@ class CodeWriter
     @asm_file.puts 'D=M'
     @asm_file.puts '@LCL'
     @asm_file.puts 'M=D'
-    @asm_file.puts '@5'
+    @asm_file.puts '@' + (5 + numArgs).to_s
     @asm_file.puts 'D=D-A'
     @asm_file.puts '@ARG'
     @asm_file.puts 'M=D'
     @asm_file.puts '@' + functionName
     @asm_file.puts '0;JMP'
-    @asm_file.puts '(return_address_' + n.to_s + ')'
+    @asm_file.puts '(return_address_' + @return_address_number.to_s + ')'
+    @return_address_number += 1
   end
 
   def writeReturn
@@ -333,16 +353,19 @@ class CodeWriter
     @asm_file.puts 'M=D'
 
     @asm_file.puts '@R14'
-    @asm_file.puts 'A=M'
+    @asm_file.puts 'A=M-1'
     @asm_file.puts '0;JMP'
+
+    # @function_list.delete_at(-1)
   end
 
   def writeFunction(functionName, numLocals)
-    writeLabel(functionName)
+    @asm_file.puts '(' + functionName + ')'
     numLocals.times do
       @asm_file.puts 'D=0'
       push_on_stack
     end
+    @function_list << functionName
   end
 
   def close

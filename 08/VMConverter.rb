@@ -24,17 +24,22 @@ def convert(vm_file, code_writer)
       code_writer.writeCall(parser.arg1, parser.arg2)
     end
   end
-  code_writer.close
+  # code_writer.close
 end
 
 if File.ftype(ARGV[0]) == 'directory'
   code_writer = CodeWriter.new(ARGV[0].split(nil)[0] + '.asm')
+  code_writer.setFileName('Sys')
+  convert(ARGV[0] + '/' + 'Sys.vm', code_writer)
   Dir.open(ARGV[0]).each do |f|
+    next if (f == '.') || (f == '..') || (f == 'Sys.vm') || (f.split('.')[-1] != 'vm')
     code_writer.setFileName(f.split('.')[0])
-    convert(ARGV[0] + '/' + f, code_writer) unless (f == '.') || (f == '..')
+    convert(ARGV[0] + '/' + f, code_writer)
   end
+  code_writer.close
 else
   code_writer = CodeWriter.new(ARGV[0].split('.')[0] + '.asm')
   code_writer.setFileName(ARGV[0].split('.')[0])
   convert(ARGV[0], code_writer)
+  code_writer.close
 end
