@@ -25,7 +25,6 @@ class CompilationEngine
     else
       @output.print @tokens.symbol
     end
-    # @output.print @tokens.symbol
     @output.puts ' </symbol>'
     @tokens.advance
   end
@@ -136,7 +135,6 @@ class CompilationEngine
 
     while @tokens.symbol == ','
       puts_symbol
-      # puts_keyword
       puts_identifier
     end
     puts_symbol
@@ -166,66 +164,19 @@ class CompilationEngine
     @output.puts '<doStatement>'
     puts_keyword
 
-        puts_identifier
-        if @tokens.symbol == '('
-          puts_symbol
-          compileExpressionList
-          # @output.puts '<expressionList>'
-          # until (@tokens.tokenType == 'SYMBOL' && @tokens.symbol == ')')
-          #   compileExpression
-          #   puts_symbol if @tokens.symbol == ','
-          #   # p @tokens.symbol
-          # end
-          # # compileExpression
-          # # while @tokens.symbol == ','
-          # #   puts_symbol
-          # #   compileExpression
-          # # end
-          # @output.puts '</expressionList>'
-          puts_symbol
-        else
-          puts_symbol
-          puts_identifier
-          puts_symbol
+    puts_identifier
+    if @tokens.symbol == '('
+      puts_symbol
+      compileExpressionList
+      puts_symbol
+    else
+      puts_symbol
+      puts_identifier
+      puts_symbol
 
-          compileExpressionList
-          # @output.puts '<expressionList>'
-          # until (@tokens.tokenType == 'SYMBOL' && @tokens.symbol == ')')
-          #   compileExpression
-          #   puts_symbol if @tokens.symbol == ','
-          # end
-          # @output.puts '</expressionList>'
-
-          puts_symbol
-        end
-
-    # puts_identifier
-    # if @tokens.symbol == '('
-    #   puts_symbol
-    #   compileExpression
-    #   while @tokens.symbol == ','
-    #     puts_symbol
-    #     compileExpression
-    #   end
-    #   puts_symbol
-    # else
-    #   puts_symbol
-    #   puts_identifier
-    #   puts_symbol
-    #   compileExpression
-    #   while @tokens.symbol == ','
-    #     puts_symbol
-    #     compileExpression
-    #   end
-    #   puts_symbol
-    # end
-
-    # puts_identifier
-    # puts_symbol
-    # until @tokens.tokenType == 'SYMBOL' && @tokens.symbol == ';'
-    #   # p @tokens.symbol
-    #   compileExpression
-    # end
+      compileExpressionList
+      puts_symbol
+    end
     puts_symbol
 
     @output.puts '</doStatement>'
@@ -264,15 +215,9 @@ class CompilationEngine
     @output.puts '<returnStatement>'
     puts_keyword
     if @tokens.tokenType == 'SYMBOL'
-      if @tokens.symbol == ';'
-        # puts_symbol
-      else
-        compileExpression
-        # puts_symbol
-      end
+      compileExpression unless @tokens.symbol == ';'
     else
       compileExpression
-      # puts_symbol
     end
     puts_symbol
     @output.puts '</returnStatement>'
@@ -313,8 +258,6 @@ class CompilationEngine
 
   def compileTerm
     @output.puts '<term>'
-    # p @tokens.symbol
-    # sleep 2
     if @tokens.tokenType == 'IDENTIFIER'
       token = @tokens.identifier
       @tokens.advance
@@ -322,34 +265,20 @@ class CompilationEngine
       @output.print '<identifier> '
       @output.print token
       @output.puts ' </identifier>'
-      # @output.print '<symbol> '
-      # @output.print next_token
-      # @output.puts ' </symbol>'
-    # p next_token
       case next_token
       when '['
-      @output.print '<symbol> '
-      @output.print next_token
-      @output.puts ' </symbol>'
-        # p @tokens.symbol
-        # sleep 10
+        @output.print '<symbol> '
+        @output.print next_token
+        @output.puts ' </symbol>'
         @tokens.advance
         compileExpression
-        # compileExpressionList
-        # @output.puts '<expressionList>'
-        # until (@tokens.tokenType == 'SYMBOL' && @tokens.symbol == ')')
-        #   compileExpression
-        # end
-        # @output.puts '</expressionList>'
         puts_symbol
       when '('
         @output.print '<symbol> '
         @output.print next_token
         @output.puts ' </symbol>'
         @tokens.advance
-        
         expressionList
-
         puts_symbol
       when '.'
         @output.print '<symbol> '
@@ -395,11 +324,4 @@ class CompilationEngine
     end
     @output.puts '</expressionList>'
   end
-#terminal
-#keyword,symbol,integerConstant,stringConstant,identifier
-
-    # non-termial
-# class,classVarDec,subroutineDec,parameterList,subroutineBody,varDec
-# statements,whileStatement,ifStatement,returnStatement,letStatement,doStatement
-# expression,term,expressionList
 end
