@@ -14,6 +14,7 @@ if File.ftype(ARGV[0]) == 'directory'
 else
     output = File.open(ARGV[0].split('.')[0] + '.vm', 'w')
     tokens = JackTokenizer.new(ARGV[0])
+    identifier_tokens = JackTokenizer.new(ARGV[0])
     compilation_engine = CompilationEngine.new(tokens, output)
     compilation_engine.compileClass
 end 

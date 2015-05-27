@@ -7,6 +7,7 @@ class CompilationEngine
     @identifier_tokens = Marshal.load(Marshal.dump(@tokens.clone))
     @output = output
     @symbol_table = SymbolTable.new
+    compileClass
   end
 
   def puts_keyword
@@ -47,12 +48,18 @@ class CompilationEngine
   end
 
   def puts_identifier(defined = nil)
+    # begin
+      p @tokens.tokenType
+    # rescue NoMethodError
+    #   return
+    # end
+    # p @tokens.tokenType
     kind = @symbol_table.kindOf(@tokens.identifier)
     index = @symbol_table.indexOf(@tokens.identifier) unless kind == 'NONE'
     name = @tokens.identifier
     @tokens.advance
     if kind == 'NONE'
-      if @tokens.tokenType == 'SYMBOL' && @tokens.symbol == '('
+      if @tokens.tokenType == 'symbol' && @tokens.symbol == '('
         category = 'SUBROUTINE'
       else
         category = 'CLASS'
@@ -60,7 +67,8 @@ class CompilationEngine
     else
       category = kind
     end
-    @output.puts '<identifier>'
+    defined
+    @output.puts '<identifier> '
     @output.print '<category> '
     @output.print category
     @output.puts ' </category>'
@@ -116,7 +124,7 @@ class CompilationEngine
     end
     @output.puts '<class>'
     puts_keyword
-    puts_identifier
+    # puts_identifier
     puts_symbol
     while @tokens.keyWord == 'static' || @tokens.keyWord == 'field'
       compileClassVarDec
@@ -416,47 +424,9 @@ p @symbol_table
       token = @tokens.identifier
       @tokens.advance
       next_token = @tokens.symbol
-
-      @output.puts '<identifier>'
-      kind = @symbol_table.kindOf(token)
-      index = @symbol_table.indexOf(token) unless kind == 'NONE'
-      name = token 
-# p name
-      if kind == 'NONE'
-        if next_token == '('
-          # p 'sub'
-          category = 'SUBROUTINE'
-        else
-          # p 'class'
-          # p next_token
-          category = 'CLASS'
-        end
-      else
-        category = kind
-      end
-    
-      @output.print '<category> '
-      @output.print category
-      @output.puts ' </category>'
-      if kind == 'VAR'
-        @output.print '<defined> '
-        @output.print 'used'
-        @output.puts ' </defined>'
-      end
-
-      unless kind == 'NONE'
-        @output.print '<kind> '
-        @output.print kind 
-        @output.puts ' </kind>'
-        @output.print '<index> '
-        @output.print index 
-        @output.puts ' </index>'
-      end
-      @output.print '<name> '
+      @output.print '<identifier> '
       @output.print token
-      @output.puts ' </name> '
-      @output.puts '</identifier>'
-
+      @output.puts ' </identifier>'
       case next_token
       when '['
         @output.print '<symbol> '

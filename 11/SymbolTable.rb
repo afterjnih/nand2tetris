@@ -12,7 +12,7 @@ class SymbolTable
 
   def add_hash(current_scope, name, type, kind)
     current_scope[name.to_sym] = { type: type, kind: kind,
-                                   num: varCount(kind) }
+                                   index: varCount(kind) }
   end
 
   def define(name, type, kind)
@@ -35,7 +35,7 @@ class SymbolTable
     if @current_scope[name.to_sym].nil?
       'NONE'
     else
-      @current_scope[name.to_sym]
+      @current_scope[name.to_sym][:kind]
     end
   end
 
