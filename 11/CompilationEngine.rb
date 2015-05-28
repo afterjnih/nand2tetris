@@ -1,92 +1,94 @@
 require './SymbolTable'
-
+require './VMWriter'
+ 
 class CompilationEngine
-
+ 
   def initialize(tokens, output)
     @tokens = tokens
     @identifier_tokens = Marshal.load(Marshal.dump(@tokens.clone))
-    @output = output
+#    @output = output
     @symbol_table = SymbolTable.new
+    @vm_writer = VMWriter.new(output)
   end
-
+ 
   def puts_keyword
-    @output.print '<keyword> '
-    @output.print @tokens.keyWord
-    @output.puts ' </keyword>'
+#    @output.print '<keyword> '
+#    @output.print @tokens.keyWord
+#    @output.puts ' </keyword>'
     @tokens.advance
   end
-
+ 
   def puts_symbol
-    @output.print '<symbol> '
-    case @tokens.symbol
-    when '<'
-      @output.print '&lt;'
-    when '>'
-      @output.print '&gt;'
-    when '&'
-      @output.print '&amp;'
-    else
-      @output.print @tokens.symbol
-    end
-    @output.puts ' </symbol>'
+#    @output.print '<symbol> '
+#    case @tokens.symbol
+#    when '<'
+#      @output.print '&lt;'
+#    when '>'
+#      @output.print '&gt;'
+#    when '&'
+#      @output.print '&amp;'
+#    else
+#      @output.print @tokens.symbol
+#    end
+#    @output.puts ' </symbol>'
     @tokens.advance
   end
-
+ 
   def puts_integer_constant
-    @output.print '<integerConstant> '
-    @output.print @tokens.intVal
-    @output.puts ' </integerConstant>'
+#    @output.print '<integerConstant> '
+#    @output.print @tokens.intVal
+#    @output.puts ' </integerConstant>'
     @tokens.advance
   end
-
+ 
   def puts_string_constant
-    @output.print '<stringConstant> '
-    @output.print @tokens.stringVal
-    @output.puts ' </stringConstant>'
+#    @output.print '<stringConstant> '
+#    @output.print @tokens.stringVal
+#    @output.puts ' </stringConstant>'
     @tokens.advance
   end
-
+ 
   def puts_identifier(defined = nil)
-    kind = @symbol_table.kindOf(@tokens.identifier)
-    index = @symbol_table.indexOf(@tokens.identifier) unless kind == 'NONE'
-    name = @tokens.identifier
+#    kind = @symbol_table.kindOf(@tokens.identifier)
+#    index = @symbol_table.indexOf(@tokens.identifier) unless kind == 'NONE'
+#    name = @tokens.identifier
     @tokens.advance
-    if kind == 'NONE'
-      if @tokens.tokenType == 'SYMBOL' && @tokens.symbol == '('
-        category = 'SUBROUTINE'
-      else
-        category = 'CLASS'
-      end
-    else
-      category = kind
-    end
-    @output.puts '<identifier>'
-    @output.print '<category> '
-    @output.print category
-    @output.puts ' </category>'
-    if kind == 'VAR'
-      @output.print '<defined> '
-      if defined == 'defined'
-        @output.print 'defined'
-      else
-        @output.print 'used'
-      end
-      @output.puts ' </defined>'
-    end
-    unless kind == 'NONE'
-      @output.print '<kind> '
-      @output.print kind 
-      @output.puts ' </kind>'
-      @output.print '<index> '
-      @output.print index 
-      @output.puts ' </index>'
-    end
-    @output.print '<name> '
-    @output.print name 
-    @output.puts ' </name> '
-    @output.puts ' </identifier>'
+#    if kind == 'NONE'
+#      if @tokens.tokenType == 'SYMBOL' && @tokens.symbol == '('
+#        category = 'SUBROUTINE'
+#      else
+#        category = 'CLASS'
+#      end
+#    else
+#      category = kind
+#    end
+#    @output.puts '<identifier>'
+#    @output.print '<category> '
+#    @output.print category
+#    @output.puts ' </category>'
+#    if kind == 'VAR'
+#      @output.print '<defined> '
+#      if defined == 'defined'
+#        @output.print 'defined'
+#      else
+#        @output.print 'used'
+#      end
+#      @output.puts ' </defined>'
+#    end
+#    unless kind == 'NONE'
+#      @output.print '<kind> '
+#      @output.print kind 
+#      @output.puts ' </kind>'
+#      @output.print '<index> '
+#      @output.print index 
+#      @output.puts ' </index>'
+#    end
+#    @output.print '<name> '
+#    @output.print name 
+#    @output.puts ' </name> '
+#    @output.puts ' </identifier>'
   end
-
+ 
   def compileClass
     type = nil
     kind = nil
@@ -103,10 +105,14 @@ class CompilationEngine
           keyword_flag = true
         end
       end
-
+ 
       if @identifier_tokens.tokenType == 'IDENTIFIER'
         if keyword_flag == true
-          @symbol_table.define(@identifier_tokens.identifier, type, kind) unless type == 'class'
+    if type == 'class'
+      @class_name = @identifier_tokens.identifier
+    else
+      @symbol_table.define(@identifier_tokens.identifier, type, kind)
+    end
         else
           type = @identifier_tokens.identifier
           keyword_flag = true
@@ -114,21 +120,22 @@ class CompilationEngine
       end
       @identifier_tokens.advance
     end
-    @output.puts '<class>'
+#    @output.puts '<class>'
     puts_keyword
-    puts_identifier
+#    puts_identifier
+     @tokens.advance
     puts_symbol
     while @tokens.keyWord == 'static' || @tokens.keyWord == 'field'
       compileClassVarDec
     end
-
+ 
     while @tokens.keyWord == 'constructor' || @tokens.keyWord == 'function' || @tokens.keyWord == 'method'
       compileSubroutine
     end
     puts_symbol
-    @output.puts '</class>'
+#    @output.puts '</class>'
   end
-
+ 
   def compileClassVarDec
     @output.puts '<classVarDec>'
     puts_keyword
@@ -138,18 +145,19 @@ class CompilationEngine
       puts_identifier
     end
     puts_identifier
-
+ 
     while @tokens.symbol == ','
       puts_symbol
       puts_identifier
     end
-
+ 
     puts_symbol
     @output.puts '</classVarDec>'
   end
-
+ 
   def compileSubroutine
     @symbol_table.startSubroutine
+    @symbol_table.define('this', @class_name, 'ARG')
     type = nil
     kind = 'ARG'
     arg_register_flag = nil
@@ -187,7 +195,7 @@ class CompilationEngine
           end
         end
       end
-
+ 
       if @identifier_tokens.tokenType == 'SYMBOL'
         kind = 'VAR' if @identifier_tokens.symbol == ')' && kind == 'ARG'
         if var_register_flag == true && @identifier_tokens.symbol == ';'
@@ -195,7 +203,7 @@ class CompilationEngine
           kind = nil
         end
       end
-
+ 
       if @identifier_tokens.tokenType == 'IDENTIFIER'
         if subroutine_type_flag == true
           subroutine_type_flag = false
@@ -226,34 +234,40 @@ class CompilationEngine
           end
         end
       end
-
+ 
       @identifier_tokens.advance
     end
-
+ 
 p @symbol_table
-
-    @output.puts '<subroutineDec>'
+ 
+#    @output.puts '<subroutineDec>'
     puts_keyword
-    @tokens.tokenType == 'IDENTIFIER' ? puts_identifier : puts_keyword
-    puts_identifier
+#    @tokens.tokenType == 'IDENTIFIER' ? puts_identifier : puts_keyword
+    @tokens.advance
+#    puts_identifier
+#    @output.puts "function #{@symbol_table.typeOf('this')}.#{@tokens.identifier} #{@symbol_table.varCount('ARG') - 1}"
+    @vm_writer.writeFunction(@symbol_table.typeOf('this') + '.' + @tokens.identifier, @symbol_table.varCount('ARG') - 1)
+    @tokens.advance
+ 
     puts_symbol
+    
     compileParameterList
     puts_symbol
-
-    @output.puts '<subroutineBody>'
+ 
+#    @output.puts '<subroutineBody>'
     puts_symbol
     while @tokens.keyWord == 'var'
       compileVarDec
     end
     compileStatements
     puts_symbol
-    @output.puts '</subroutineBody>'
-
-    @output.puts '</subroutineDec>'
+#    @output.puts '</subroutineBody>'
+ 
+#    @output.puts '</subroutineDec>'
   end
-
+ 
   def compileParameterList
-    @output.puts '<parameterList>'
+#    @output.puts '<parameterList>'
     
     if @tokens.tokenType == 'KEYWORD' || @tokens.tokenType == 'IDENTIFIER'
       if @tokens.tokenType == 'KEYWORD'
@@ -262,7 +276,7 @@ p @symbol_table
         puts_identifier
       end
       puts_identifier
-
+ 
       while @tokens.symbol == ','
         puts_symbol
         if @tokens.tokenType == 'KEYWORD'
@@ -273,10 +287,10 @@ p @symbol_table
         puts_identifier
       end
     end
-
-    @output.puts '</parameterList>'
+ 
+#    @output.puts '</parameterList>'
   end
-
+ 
   def compileVarDec
     @output.puts '<varDec>'
     puts_keyword
@@ -286,7 +300,7 @@ p @symbol_table
       puts_identifier
     end
     puts_identifier('defined')
-
+ 
     while @tokens.symbol == ','
       puts_symbol
       puts_identifier('defined')
@@ -294,9 +308,9 @@ p @symbol_table
     puts_symbol
     @output.puts '</varDec>'
   end
-
+ 
   def compileStatements
-    @output.puts '<statements>'
+#    @output.puts '<statements>'
     while @tokens.tokenType == 'KEYWORD'
       case @tokens.keyWord
       when 'let'
@@ -311,31 +325,37 @@ p @symbol_table
         compileReturn
       end
     end
-    @output.puts '</statements>'
+#    @output.puts '</statements>'
   end
-
+ 
   def compileDo
-    @output.puts '<doStatement>'
+#    @output.puts '<doStatement>'
     puts_keyword
-
-    puts_identifier
+ 
+#    puts_identifier
+    name = @tokens.identifier
+    @tokens.advance
+ 
     if @tokens.symbol == '('
       puts_symbol
       compileExpressionList
       puts_symbol
     else
       puts_symbol
-      puts_identifier
+#      puts_identifier
+      name = name + '.' + @tokens.identifier
+      @tokens.advance
       puts_symbol
-
+ 
       compileExpressionList
       puts_symbol
     end
     puts_symbol
-
-    @output.puts '</doStatement>'
+@vm_writer.writeCall(name, @nArgs)
+ 
+#    @output.puts '</doStatement>'
   end
-
+ 
   def compileLet
     @output.puts '<letStatement>'
     puts_keyword
@@ -352,7 +372,7 @@ p @symbol_table
     puts_symbol
     @output.puts '</letStatement>'
   end
-
+ 
   def compileWhile
     @output.puts '<whileStatement>'
     puts_keyword
@@ -364,9 +384,10 @@ p @symbol_table
     puts_symbol
     @output.puts '</whileStatement>'
   end
-
+ 
   def compileReturn
-    @output.puts '<returnStatement>'
+    # @output.puts '<returnStatement>'
+    @vm_writer.writeReturn
     puts_keyword
     if @tokens.tokenType == 'SYMBOL'
       compileExpression unless @tokens.symbol == ';'
@@ -374,12 +395,12 @@ p @symbol_table
       compileExpression
     end
     puts_symbol
-    @output.puts '</returnStatement>'
+    # @output.puts '</returnStatement>'
   end
-
+ 
   def compileIf
     @output.puts '<ifStatement>'
-
+ 
     puts_keyword
     puts_symbol
     compileExpression
@@ -397,27 +418,40 @@ p @symbol_table
     end
     @output.puts '</ifStatement>'
   end
-
+ 
   def compileExpression
-    @output.puts '<expression>'
+#    @output.puts '<expression>'
     compileTerm
     if @tokens.tokenType == 'SYMBOL'
-      if ['+', '-', '*', '/', '&', '|', '<', '>', '='].include?(@tokens.symbol)
+      if ['+', '-', '&', '|', '<', '>', '='].include?(@tokens.symbol)
+        command = @tokens.symbol
         puts_symbol
         compileTerm
+  @vm_writer.writeArithmetic(command)
+
+      elsif ['*', '/'].include?(@tokens.symbol)
+        if @tokens.symbol == '*'
+          command = 'multiply' 
+        else
+          command = 'divide' 
+        end
+        puts_symbol
+ 
+        compileTerm
+  @vm_writer.writeCall('Math.' + command, 2)
       end
     end
-    @output.puts '</expression>'
+#    @output.puts '</expression>'
   end
-
+ 
   def compileTerm
-    @output.puts '<term>'
+#    @output.puts '<term>'
     if @tokens.tokenType == 'IDENTIFIER'
       token = @tokens.identifier
       @tokens.advance
       next_token = @tokens.symbol
-
-      @output.puts '<identifier>'
+ 
+#      @output.puts '<identifier>'
       kind = @symbol_table.kindOf(token)
       index = @symbol_table.indexOf(token) unless kind == 'NONE'
       name = token 
@@ -435,15 +469,15 @@ p @symbol_table
         category = kind
       end
     
-      @output.print '<category> '
-      @output.print category
-      @output.puts ' </category>'
+#      @output.print '<category> '
+#      @output.print category
+#      @output.puts ' </category>'
       if kind == 'VAR'
         @output.print '<defined> '
         @output.print 'used'
         @output.puts ' </defined>'
       end
-
+ 
       unless kind == 'NONE'
         @output.print '<kind> '
         @output.print kind 
@@ -456,7 +490,7 @@ p @symbol_table
       @output.print token
       @output.puts ' </name> '
       @output.puts '</identifier>'
-
+ 
       case next_token
       when '['
         @output.print '<symbol> '
@@ -477,7 +511,7 @@ p @symbol_table
         @output.print next_token
         @output.puts ' </symbol>'
         @tokens.advance
-
+ 
         puts_identifier
         puts_symbol
         compileExpressionList
@@ -489,6 +523,7 @@ p @symbol_table
     else
       case  @tokens.tokenType
       when 'INT_CONST'
+        @vm_writer.writePush('constant', @tokens.intVal)
         puts_integer_constant
       when 'STRING_CONST'
         puts_string_constant
@@ -497,23 +532,29 @@ p @symbol_table
       when 'SYMBOL'
         if @tokens.symbol == '('
           puts_symbol
+  # p @tokens.symbol
           compileExpression
+  # p @tokens.symbol
           puts_symbol
+  # p @tokens.symbol
         else
           puts_symbol
           compileTerm
         end
       end
     end
-    @output.puts '</term>'
+#    @output.puts '</term>'
   end
-
+ 
   def compileExpressionList
-    @output.puts '<expressionList>'
+    @nArgs = 0
+#    @output.puts '<expressionList>'
     until (@tokens.tokenType == 'SYMBOL' && @tokens.symbol == ')')
       compileExpression
       puts_symbol if @tokens.symbol == ','
+      @nArgs += 1
     end
-    @output.puts '</expressionList>'
+#    @output.puts '</expressionList>'
   end
 end
+

@@ -58,6 +58,7 @@ class JackTokenizer
               tmp_token = ''
             end
             slash_comment_flag = 3 if slash_comment_flag == 1
+            @tokens << '*' if slash_comment_flag == 0
           when '"'
             slash_comment_flag = 0
             tmp_token << char
@@ -69,7 +70,7 @@ class JackTokenizer
         end
       end
     end
-    # p @tokens
+    p @tokens
     @token_length = @tokens.length
     @current_token_number = 0
     @current_token = @tokens[@current_token_number]
