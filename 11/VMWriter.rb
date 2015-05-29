@@ -10,21 +10,44 @@ class VMWriter
   def writePush(segment, index)
     @vm_file.puts "push #{segment} #{index}"
   end
+
+  def writePop(segment, index)
+    @vm_file.puts "pop #{segment} #{index}"
+  end
  
   def writeArithmetic(command)
     case command
     when '+'
-      @vm_file.puts "add"
-# ADD
-# SUB
-# NEG
-# EQ
-# GT
-# LT
-# AND
-# OR
-# NOT
+      @vm_file.puts 'add'
+    when '-'
+      @vm_file.puts 'sub'
+    when '<'
+      @vm_file.puts 'lt'
+    when '='
+      @vm_file.puts 'eq'
+    when '>'
+      @vm_file.puts 'gt'
+    when '&'
+      @vm_file.puts 'and'
+    when '|'
+      @vm_file.puts 'or'
+    when '~'
+      @vm_file.puts 'not'
+    when 'NEG'
+      @vm_file.puts 'neg'
     end
+  end
+
+  def writeLabel(label)
+    @vm_file.puts "label #{label}"
+  end
+
+  def writeGoto(label)
+    @vm_file.puts "goto #{label}"
+  end
+
+  def writeIf(label)
+    @vm_file.puts "if-goto #{label}"
   end
  
   def writeCall(name, nArgs)
