@@ -11,8 +11,10 @@ class CompilationEngine
     @vm_writer = VMWriter.new(output)
     @name = nil
     @nArgs = nil
-    @while_number = 0
-    @if_number = 0
+    @while_number = -1
+    @if_number = -1
+    # @return_var = nil
+    @class_name = nil
   end
  
   def puts_keyword
@@ -140,7 +142,8 @@ class CompilationEngine
  
   def compileSubroutine
     @symbol_table.startSubroutine
-    @symbol_table.define('this', @class_name, 'ARG')
+    @return_var = nil
+    @symbol_table.define('this', @class_name, 'ARG') if @tokens.keyWord == 'method'
     type = nil
     kind = 'ARG'
     arg_register_flag = nil
@@ -226,10 +229,11 @@ p @symbol_table
 #    @output.puts '<subroutineDec>'
     puts_keyword
 #    @tokens.tokenType == 'IDENTIFIER' ? puts_identifier : puts_keyword
+    @return_var = 'void' if @tokens.tokenType == 'KEYWORD' && @tokens.keyWord == 'void'
     @tokens.advance
 #    puts_identifier
 #    @output.puts "function #{@symbol_table.typeOf('this')}.#{@tokens.identifier} #{@symbol_table.varCount('ARG') - 1}"
-    @vm_writer.writeFunction(@symbol_table.typeOf('this') + '.' + @tokens.identifier, @symbol_table.varCount('ARG') - 1)
+    @vm_writer.writeFunction(@class_name + '.' + @tokens.identifier, @symbol_table.varCount('VAR'))
     @tokens.advance
  
     puts_symbol
@@ -335,6 +339,7 @@ p @symbol_table
     end
     puts_symbol
 @vm_writer.writeCall(@name, @nArgs)
+@vm_writer.writePop('temp', 0)
 @name = nil
  
 #    @output.puts '</doStatement>'
@@ -343,7 +348,8 @@ p @symbol_table
   def compileLet
     # @output.puts '<letStatement>'
     puts_keyword
-    var = @tokens.identifier
+    identifier = @tokens.identifier
+    kind = @symbol_table.kindOf(identifier)
     puts_identifier
     if @tokens.tokenType == 'SYMBOL'
       if @tokens.symbol == '['
@@ -354,24 +360,31 @@ p @symbol_table
     end
     puts_symbol # =
     compileExpression
-    @vm_writer.writePop('local', @symbol_table.indexOf(var))
+    if kind == 'ARG'
+      @vm_writer.writePop('argument', @symbol_table.indexOf(identifier))
+    elsif kind == 'VAR'
+      @vm_writer.writePop('local', @symbol_table.indexOf(identifier))
+    end
     puts_symbol
     # @output.puts '</letStatement>'
   end
  
   def compileWhile
-    @vm_writer.writeLabel('WHILE_EXP' + @while_number.to_s)
+    @while_number += 1
+    while_number = @while_number
+    @vm_writer.writeLabel('WHILE_EXP' + while_number.to_s)
     puts_keyword
     puts_symbol
     compileExpression
     puts_symbol
-    @vm_writer.writeIf('WHILE_END' + @while_number.to_s)
+    @vm_writer.writeArithmetic('~')
+    @vm_writer.writeIf('WHILE_END' + while_number.to_s)
     puts_symbol
     compileStatements
-    @vm_writer.writeGoto('WHILE_EXP' + @while_number.to_s)
+    @vm_writer.writeGoto('WHILE_EXP' + while_number.to_s)
     puts_symbol
-    @vm_writer.writeLabel('WHILE_END' + @while_number.to_s)
-    @while_number += 1
+    @vm_writer.writeLabel('WHILE_END' + while_number.to_s)
+    # @while_number += 1
     # @output.puts '<whileStatement>'
     # puts_keyword
     # puts_symbol
@@ -385,7 +398,6 @@ p @symbol_table
  
   def compileReturn
     # @output.puts '<returnStatement>'
-    @vm_writer.writeReturn
     puts_keyword
     if @tokens.tokenType == 'SYMBOL'
       compileExpression unless @tokens.symbol == ';'
@@ -393,31 +405,38 @@ p @symbol_table
       compileExpression
     end
     puts_symbol
+    if @return_var == 'void'
+      @vm_writer.writePush('constant', 0)
+      @return_val = nil
+    end
+    @vm_writer.writeReturn
     # @output.puts '</returnStatement>'
   end
  
   def compileIf
+    @if_number += 1
+    if_number = @if_number
     # @output.puts '<ifStatement>'
     puts_keyword
     puts_symbol
     compileExpression
     puts_symbol
-    @vm_writer.writeIf('IF_TRUE' + @if_number.to_s)
-    @vm_writer.writeGoto('IF_FALSE' + @if_number.to_s)
-    @vm_writer.writeLabel('IF_TRUE' + @if_number.to_s)
+    @vm_writer.writeIf('IF_TRUE' + if_number.to_s)
+    @vm_writer.writeGoto('IF_FALSE' + if_number.to_s)
+    @vm_writer.writeLabel('IF_TRUE' + if_number.to_s)
     puts_symbol
     compileStatements
     puts_symbol
     if @tokens.tokenType == 'KEYWORD' && @tokens.keyWord == 'else'
-      @vm_writer.writeGoto('IF_END' + @if_number.to_s)
-      @vm_writer.writeLabel('IF_FALSE' + @if_number.to_s)
+      @vm_writer.writeGoto('IF_END' + if_number.to_s)
+      @vm_writer.writeLabel('IF_FALSE' + if_number.to_s)
       puts_keyword
       puts_symbol
       compileStatements
       puts_symbol
-      @vm_writer.writeLabel('IF_END' + @if_number.to_s)
+      @vm_writer.writeLabel('IF_END' + if_number.to_s)
     else
-      @vm_writer.writeLabel('IF_FALSE' + @if_number.to_s)
+      @vm_writer.writeLabel('IF_FALSE' + if_number.to_s)
     end
     # @output.puts '</ifStatement>'
   end
@@ -426,12 +445,12 @@ p @symbol_table
 #    @output.puts '<expression>'
     compileTerm
     if @tokens.tokenType == 'SYMBOL'
-      if ['+', '-', '&', '|', '<', '>', '='].include?(@tokens.symbol)
+      if ['+', '-', '&', '|', '<', '>', '=', '~'].include?(@tokens.symbol)
         command = @tokens.symbol
         puts_symbol
         compileTerm
   @vm_writer.writeArithmetic(command)
-
+ 
       elsif ['*', '/'].include?(@tokens.symbol)
         if @tokens.symbol == '*'
           command = 'multiply' 
@@ -451,6 +470,8 @@ p @symbol_table
 #    @output.puts '<term>'
     if @tokens.tokenType == 'IDENTIFIER'
       token = @tokens.identifier
+      if token == 'value'
+      end
       @tokens.advance
       next_token = @tokens.symbol
  
@@ -460,6 +481,7 @@ p @symbol_table
       name = token 
 # p name
       if kind == 'NONE'
+        @name = token
         if next_token == '('
           # p 'sub'
           category = 'SUBROUTINE'
@@ -468,8 +490,13 @@ p @symbol_table
           # p next_token
           category = 'CLASS'
         end
-      else
+      elsif kind == 'VAR'
+        @vm_writer.writePush('local', index)
         category = kind
+      elsif kind == 'ARG'
+        @vm_writer.writePush('argument', index)
+        category = kind
+        # p token
       end
     
 #      @output.print '<category> '
@@ -490,11 +517,7 @@ p @symbol_table
         # @output.puts ' </index>'
       end
       # @output.print '<name> '
-      p token
-      if @symbol_table.kindOf(token) == 'NONE'
-        @name = token
-      else
-      end
+      # p token
       # @output.print token
       # @output.puts ' </name> '
       # @output.puts '</identifier>'
@@ -520,7 +543,7 @@ p @symbol_table
         @name = @name + next_token
         # @output.puts ' </symbol>'
         @tokens.advance
-
+ 
         @name = @name + @tokens.identifier 
         puts_identifier
         puts_symbol
@@ -540,6 +563,12 @@ p @symbol_table
       when 'STRING_CONST'
         puts_string_constant
       when 'KEYWORD'
+        if @tokens.keyWord == 'true'
+          @vm_writer.writePush('constant', 1)
+          @vm_writer.writeArithmetic('NEG')
+        elsif @tokens.keyWord == 'false'
+          @vm_writer.writePush('constant', 0)
+        end
         puts_keyword
       when 'SYMBOL'
         if @tokens.symbol == '('
@@ -553,6 +582,10 @@ p @symbol_table
           puts_symbol
           compileTerm
           @vm_writer.writeArithmetic('NEG')
+        elsif @tokens.symbol == '~'
+          puts_symbol
+          compileTerm
+          @vm_writer.writeArithmetic('~')
         else
           puts_symbol
           compileTerm
@@ -573,4 +606,3 @@ p @symbol_table
 #    @output.puts '</expressionList>'
   end
 end
-

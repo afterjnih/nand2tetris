@@ -3,8 +3,8 @@ class VMWriter
     @vm_file = vm_file 
   end
  
-  def writeFunction(name, nArgs)
-    @vm_file.puts "function #{name} #{nArgs}" 
+  def writeFunction(name, nLocals)
+    @vm_file.puts "function #{name} #{nLocals}" 
   end
  
   def writePush(segment, index)
