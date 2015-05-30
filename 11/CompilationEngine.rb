@@ -10,7 +10,6 @@ class CompilationEngine
     @symbol_table = SymbolTable.new
     @vm_writer = VMWriter.new(output)
     @name = nil
-    @nArgs = nil
     @while_number = -1
     @if_number = -1
     # @return_var = nil
@@ -122,7 +121,7 @@ class CompilationEngine
   end
  
   def compileClassVarDec
-    @output.puts '<classVarDec>'
+    # @output.puts '<classVarDec>'
     puts_keyword
     if @tokens.tokenType == 'KEYWORD'
       puts_keyword
@@ -137,10 +136,12 @@ class CompilationEngine
     end
  
     puts_symbol
-    @output.puts '</classVarDec>'
+    # @output.puts '</classVarDec>'
   end
  
   def compileSubroutine
+    @while_number = -1
+    @if_number = -1
     @symbol_table.startSubroutine
     @return_var = nil
     @symbol_table.define('this', @class_name, 'ARG') if @tokens.keyWord == 'method'
@@ -227,6 +228,7 @@ class CompilationEngine
 p @symbol_table
  
 #    @output.puts '<subroutineDec>'
+    subroutine = @tokens.keyWord
     puts_keyword
 #    @tokens.tokenType == 'IDENTIFIER' ? puts_identifier : puts_keyword
     @return_var = 'void' if @tokens.tokenType == 'KEYWORD' && @tokens.keyWord == 'void'
@@ -234,6 +236,15 @@ p @symbol_table
 #    puts_identifier
 #    @output.puts "function #{@symbol_table.typeOf('this')}.#{@tokens.identifier} #{@symbol_table.varCount('ARG') - 1}"
     @vm_writer.writeFunction(@class_name + '.' + @tokens.identifier, @symbol_table.varCount('VAR'))
+    if subroutine == 'constructor'
+      @vm_writer.writePush('constant', @symbol_table.varCount('FIELD'))
+      @vm_writer.writeCall('Memory.alloc', 1)
+      # @vm_writer.writeCall('Memory.alloc', @symbol_table.varCount('FIELD'))
+      @vm_writer.writePop('pointer', 0);
+    elsif subroutine == 'method'
+      @vm_writer.writePush('argument', 0)
+      @vm_writer.writePop('pointer', 0)
+    end
     @tokens.advance
  
     puts_symbol
@@ -316,29 +327,51 @@ p @symbol_table
   end
  
   def compileDo
+    nArgs = 0 
 #    @output.puts '<doStatement>'
     puts_keyword
  
 #    puts_identifier
     @name = @tokens.identifier
+    # if (@symbol_table.kindOf(@name) == 'VAR') || (@symbol_table.kindOf(@name) == 'ARG')
+    if (@symbol_table.kindOf(@name) == 'VAR')
+      @vm_writer.writePush('local', @symbol_table.indexOf(@name))
+      method_flag = true
+      nArgs += 1
+      @name = @symbol_table.typeOf(@name)
+    elsif (@symbol_table.kindOf(@name) == 'ARG')
+      @vm_writer.writePush('argument', @symbol_table.indexOf(@name))
+      method_flag = true
+      nArgs += 1
+      @name = @symbol_table.typeOf(@name)
+    elsif (@symbol_table.kindOf(@name) == 'FIELD')
+      @vm_writer.writePush('this', @symbol_table.indexOf(@name))
+      method_flag = true
+      nArgs += 1
+      @name = @symbol_table.typeOf(@name)
+    end
     @tokens.advance
  
     if @tokens.symbol == '('
+      @name = @class_name + '.' +  @name
+      nArgs = 1
+      @vm_writer.writePush('pointer', 0)
       puts_symbol
-      compileExpressionList
+      nArgs += compileExpressionList
       puts_symbol
     else
       puts_symbol
 #      puts_identifier
+      # @name = @symbol_table.typeOf(@name) + '.' + @tokens.identifier
       @name = @name + '.' + @tokens.identifier
       @tokens.advance
       puts_symbol
- 
-      compileExpressionList
+      nArgs += compileExpressionList
       puts_symbol
     end
     puts_symbol
-@vm_writer.writeCall(@name, @nArgs)
+    # @vm_writer.writePush('this', 0) if method_flag == true
+@vm_writer.writeCall(@name, nArgs)
 @vm_writer.writePop('temp', 0)
 @name = nil
  
@@ -364,6 +397,9 @@ p @symbol_table
       @vm_writer.writePop('argument', @symbol_table.indexOf(identifier))
     elsif kind == 'VAR'
       @vm_writer.writePop('local', @symbol_table.indexOf(identifier))
+    elsif kind == 'FIELD'
+      @vm_writer.writePop('this', @symbol_table.indexOf(identifier))
+    elsif kind == 'STATIC'
     end
     puts_symbol
     # @output.puts '</letStatement>'
@@ -407,7 +443,7 @@ p @symbol_table
     puts_symbol
     if @return_var == 'void'
       @vm_writer.writePush('constant', 0)
-      @return_val = nil
+      @return_var = nil
     end
     @vm_writer.writeReturn
     # @output.puts '</returnStatement>'
@@ -467,6 +503,7 @@ p @symbol_table
   end
  
   def compileTerm
+    nArgs = 0
 #    @output.puts '<term>'
     if @tokens.tokenType == 'IDENTIFIER'
       token = @tokens.identifier
@@ -497,6 +534,10 @@ p @symbol_table
         @vm_writer.writePush('argument', index)
         category = kind
         # p token
+      elsif kind == 'FIELD'
+        # @vm_writer.writePush('pointer', 0)
+        @vm_writer.writePush('this', index)
+      elsif kind == 'STATIC'
       end
     
 #      @output.print '<category> '
@@ -531,25 +572,38 @@ p @symbol_table
         compileExpression
         puts_symbol
       when '('
-        @output.print '<symbol> '
-        @output.print next_token
-        @output.puts ' </symbol>'
-        @tokens.advance
-        expressionList
+        @name = @class_name + '.' + @name
+        nArgs = 1
+        @vm_writer.writePush('argument', 0)
+        # puts_symbol
+        nArgs += compileExpressionList
         puts_symbol
-      when '.'
+        @vm_writer.writeCall(@name, nArgs)
+        @name = nil
         # @output.print '<symbol> '
         # @output.print next_token
-        @name = @name + next_token
+        # @output.puts ' </symbol>'
+        # @tokens.advance
+        # expressionList
+        # puts_symbol
+      when '.'
+        # if (@symbol_table.kindOf(@name) == 'VAR') || (@symbol_table.kindOf(@name) == 'ARG')
+        #   nArgs += 1
+        #   @vm_writer.writePush('local', @symbol_table.indexOf(@name))
+        # end
+        # @output.print '<symbol> '
+        # @output.print next_token
+        # p @name
+        # @name = @symbol_table.typeOf(@name) + next_token
         # @output.puts ' </symbol>'
         @tokens.advance
  
-        @name = @name + @tokens.identifier 
+        @name = @name + '.' +  @tokens.identifier 
         puts_identifier
         puts_symbol
-        compileExpressionList
+        nArgs += compileExpressionList
         puts_symbol
-        @vm_writer.writeCall(@name, @nArgs)
+        @vm_writer.writeCall(@name, nArgs)
         @name = nil
       else
         # @output.puts '</term>'
@@ -568,6 +622,8 @@ p @symbol_table
           @vm_writer.writeArithmetic('NEG')
         elsif @tokens.keyWord == 'false'
           @vm_writer.writePush('constant', 0)
+        elsif @tokens.keyWord == 'this'
+          @vm_writer.writePush('pointer', 0)
         end
         puts_keyword
       when 'SYMBOL'
@@ -596,13 +652,14 @@ p @symbol_table
   end
  
   def compileExpressionList
-    @nArgs = 0
+    nArgs = 0
 #    @output.puts '<expressionList>'
     until (@tokens.tokenType == 'SYMBOL' && @tokens.symbol == ')')
       compileExpression
       puts_symbol if @tokens.symbol == ','
-      @nArgs += 1
+      nArgs += 1
     end
 #    @output.puts '</expressionList>'
+    nArgs
   end
 end

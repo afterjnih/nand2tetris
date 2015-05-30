@@ -4,6 +4,9 @@ class VMWriter
   end
  
   def writeFunction(name, nLocals)
+    # puts caller[0]
+    # p name
+    # sleep 2
     @vm_file.puts "function #{name} #{nLocals}" 
   end
  
@@ -51,6 +54,9 @@ class VMWriter
   end
  
   def writeCall(name, nArgs)
+    # puts caller[0]
+    # p name
+    # sleep 2
     @vm_file.puts "call #{name} #{nArgs}"
   end
 

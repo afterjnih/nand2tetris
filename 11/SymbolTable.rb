@@ -3,11 +3,13 @@ class SymbolTable
     @class_scope = {}
     @subroutine_scope = {}
     @current_scope = @class_scope
+    @another_scope = @subroutine_scope
   end
 
   def startSubroutine
     @subroutine_scope = {}
     @current_scope = @subroutine_scope
+    @another_scope = @class_scope
   end
 
   def add_hash(current_scope, name, type, kind)
@@ -25,25 +27,45 @@ class SymbolTable
 
   def varCount(kind)
     count = 0
-    @current_scope.each_value do |v|
-      count += 1 if v[:kind] == kind
+    if kind == 'STATIC' || kind == 'FIELD'
+      @class_scope.each_value do |v|
+        count += 1 if v[:kind] == kind
+      end
+    else
+      @subroutine_scope.each_value do |v|
+        count += 1 if v[:kind] == kind
+      end
     end
     return count
   end
 
   def kindOf(name)
     if @current_scope[name.to_sym].nil?
-      'NONE'
+      if @another_scope[name.to_sym].nil?
+        'NONE'
+      else
+        @another_scope[name.to_sym][:kind]
+      end
     else
       @current_scope[name.to_sym][:kind]
     end
   end
 
   def typeOf(name)
-    @current_scope[name.to_sym][:type]
+    if @current_scope[name.to_sym].nil?
+        @another_scope[name.to_sym][:type]
+    else
+      @current_scope[name.to_sym][:type]
+    end
   end
 
   def indexOf(name)
-    @current_scope[name.to_sym][:index]
+    if @current_scope[name.to_sym].nil?
+      unless @another_scope[name.to_sym].nil?
+        @another_scope[name.to_sym][:index]
+      end
+    else
+      @current_scope[name.to_sym][:index]
+    end
   end
 end
