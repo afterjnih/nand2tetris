@@ -699,6 +699,8 @@ p next_token
           @vm_writer.writeArithmetic('NEG')
         elsif @tokens.keyWord == 'false'
           @vm_writer.writePush('constant', 0)
+        elsif @tokens.keyWord == 'null'
+          @vm_writer.writePush('constant', 0)
         elsif @tokens.keyWord == 'this'
           @vm_writer.writePush('pointer', 0)
         end
