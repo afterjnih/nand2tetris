@@ -399,6 +399,7 @@ p @symbol_table
         elsif kind == 'FIELD'
           @vm_writer.writePush('this', @symbol_table.indexOf(identifier))
         elsif kind == 'STATIC'
+          @vm_writer.writePush('static', @symbol_table.indexOf(identifier))
         end
         @vm_writer.writeArithmetic('+')
         # @vm_writer.writePop('pointer', 1)
@@ -419,6 +420,7 @@ p @symbol_table
       elsif kind == 'FIELD'
         @vm_writer.writePop('this', @symbol_table.indexOf(identifier))
       elsif kind == 'STATIC'
+        @vm_writer.writePop('static', @symbol_table.indexOf(identifier))
       elsif array_flag == true
         @vm_writer.writerPop('that', 0)
       end
@@ -540,10 +542,12 @@ p @symbol_table
 #    @output.puts '<term>'
     if @tokens.tokenType == 'IDENTIFIER'
       token = @tokens.identifier
+p token
       if token == 'value'
       end
       @tokens.advance
       next_token = @tokens.symbol
+p next_token
       array_flag = true if next_token == '['
 #      @output.puts '<identifier>'
       kind = @symbol_table.kindOf(token)
@@ -551,7 +555,8 @@ p @symbol_table
       name = token 
 # p name
       if kind == 'NONE'
-        @name = token
+        # @name = token
+        name = token
         if next_token == '('
           # p 'sub'
           category = 'SUBROUTINE'
@@ -561,16 +566,26 @@ p @symbol_table
           category = 'CLASS'
         end
       elsif kind == 'VAR' && array_flag == false
+        name = @symbol_table.typeOf(token)
+        nArgs += 1
         @vm_writer.writePush('local', index)
         category = kind
       elsif kind == 'ARG' && array_flag == false
+        name = @symbol_table.typeOf(token)
+        nArgs += 1
         @vm_writer.writePush('argument', index)
         category = kind
         # p token
       elsif kind == 'FIELD' && array_flag == false
+        name = @symbol_table.typeOf(token)
+        nArgs += 1
         # @vm_writer.writePush('pointer', 0)
         @vm_writer.writePush('this', index)
       elsif kind == 'STATIC' && array_flag == false
+        name = @symbol_table.typeOf(token)
+        nArgs += 1
+        @vm_writer.writePush('static', index)
+        category = kind
       end
     
 #      @output.print '<category> '
@@ -608,6 +623,7 @@ p @symbol_table
         when 'FIELD'
         @vm_writer.writePush('this', index)
         when 'STATIC'
+        @vm_writer.writePush('static', index)
         end
         # @output.print '<symbol> '
         # @output.print next_token
@@ -619,14 +635,17 @@ p @symbol_table
         @vm_writer.writePop('pointer', 1)
         @vm_writer.writePush('that', 0)
       when '('
-        @name = @class_name + '.' + @name
+        # @name = @class_name + '.' + @name
+        name = @class_name + '.' + name
         nArgs = 1
         @vm_writer.writePush('argument', 0)
         # puts_symbol
         nArgs += compileExpressionList
         puts_symbol
-        @vm_writer.writeCall(@name, nArgs)
-        @name = nil
+        # @vm_writer.writeCall(@name, nArgs)
+        @vm_writer.writeCall(name, nArgs)
+        # @name = nil
+        name = nil
         # @output.print '<symbol> '
         # @output.print next_token
         # @output.puts ' </symbol>'
@@ -645,13 +664,17 @@ p @symbol_table
         # @output.puts ' </symbol>'
         @tokens.advance
  
-        @name = @name + '.' +  @tokens.identifier 
+        # @name = @name + '.' +  @tokens.identifier 
+        name = name + '.' +  @tokens.identifier 
+        # @name = @symbol_table.typeOf(token) + '.' +  @tokens.identifier 
         puts_identifier
         puts_symbol
         nArgs += compileExpressionList
         puts_symbol
-        @vm_writer.writeCall(@name, nArgs)
-        @name = nil
+        # @vm_writer.writeCall(@name, nArgs)
+        @vm_writer.writeCall(name, nArgs)
+        # @name = nil
+        name = nil
       else
         # @output.puts '</term>'
         return
