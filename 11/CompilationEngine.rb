@@ -380,27 +380,59 @@ p @symbol_table
  
   def compileLet
     # @output.puts '<letStatement>'
+    array_flag = false
     puts_keyword
     identifier = @tokens.identifier
     kind = @symbol_table.kindOf(identifier)
     puts_identifier
     if @tokens.tokenType == 'SYMBOL'
       if @tokens.symbol == '['
+        array_flag = true
+        # @vm_writer.writePush(kind, @symbol_table.indexOf(identifier))
         puts_symbol
         compileExpression
         puts_symbol
+        if kind == 'VAR'
+          @vm_writer.writePush('local', @symbol_table.indexOf(identifier))
+        elsif kind == 'ARG'
+          @vm_writer.writePush('argument', @symbol_table.indexOf(identifier))
+        elsif kind == 'FIELD'
+          @vm_writer.writePush('this', @symbol_table.indexOf(identifier))
+        elsif kind == 'STATIC'
+        end
+        @vm_writer.writeArithmetic('+')
+        # @vm_writer.writePop('pointer', 1)
       end
     end
     puts_symbol # =
     compileExpression
-    if kind == 'ARG'
-      @vm_writer.writePop('argument', @symbol_table.indexOf(identifier))
-    elsif kind == 'VAR'
-      @vm_writer.writePop('local', @symbol_table.indexOf(identifier))
-    elsif kind == 'FIELD'
-      @vm_writer.writePop('this', @symbol_table.indexOf(identifier))
-    elsif kind == 'STATIC'
+    if array_flag == true
+      @vm_writer.writePop('temp', 0)
+      @vm_writer.writePop('pointer', 1)
+      @vm_writer.writePush('temp', 0)
+      @vm_writer.writePop('that', 0)
+    else
+      if kind == 'ARG'
+        @vm_writer.writePop('argument', @symbol_table.indexOf(identifier))
+      elsif kind == 'VAR'
+        @vm_writer.writePop('local', @symbol_table.indexOf(identifier))
+      elsif kind == 'FIELD'
+        @vm_writer.writePop('this', @symbol_table.indexOf(identifier))
+      elsif kind == 'STATIC'
+      elsif array_flag == true
+        @vm_writer.writerPop('that', 0)
+      end
     end
+    # if kind == 'ARG'
+    #   @vm_writer.writePop('argument', @symbol_table.indexOf(identifier))
+    # elsif kind == 'VAR'
+    #   @vm_writer.writePop('local', @symbol_table.indexOf(identifier))
+    # elsif kind == 'FIELD'
+    #   @vm_writer.writePop('this', @symbol_table.indexOf(identifier))
+    # elsif kind == 'STATIC'
+    # elsif array_flag == true
+    #   @vm_writer.writerPop('that', 0)
+    # end
     puts_symbol
     # @output.puts '</letStatement>'
   end
@@ -504,6 +536,7 @@ p @symbol_table
  
   def compileTerm
     nArgs = 0
+    array_flag = false
 #    @output.puts '<term>'
     if @tokens.tokenType == 'IDENTIFIER'
       token = @tokens.identifier
@@ -511,7 +544,7 @@ p @symbol_table
       end
       @tokens.advance
       next_token = @tokens.symbol
- 
+      array_flag = true if next_token == '['
 #      @output.puts '<identifier>'
       kind = @symbol_table.kindOf(token)
       index = @symbol_table.indexOf(token) unless kind == 'NONE'
@@ -527,17 +560,17 @@ p @symbol_table
           # p next_token
           category = 'CLASS'
         end
-      elsif kind == 'VAR'
+      elsif kind == 'VAR' && array_flag == false
         @vm_writer.writePush('local', index)
         category = kind
-      elsif kind == 'ARG'
+      elsif kind == 'ARG' && array_flag == false
         @vm_writer.writePush('argument', index)
         category = kind
         # p token
-      elsif kind == 'FIELD'
+      elsif kind == 'FIELD' && array_flag == false
         # @vm_writer.writePush('pointer', 0)
         @vm_writer.writePush('this', index)
-      elsif kind == 'STATIC'
+      elsif kind == 'STATIC' && array_flag == false
       end
     
 #      @output.print '<category> '
@@ -565,12 +598,26 @@ p @symbol_table
  
       case next_token
       when '['
-        @output.print '<symbol> '
-        @output.print next_token
-        @output.puts ' </symbol>'
         @tokens.advance
         compileExpression
+        case kind
+        when 'VAR'
+          @vm_writer.writePush('local', index)
+        when 'ARG'
+        @vm_writer.writePush('argument', index)
+        when 'FIELD'
+        @vm_writer.writePush('this', index)
+        when 'STATIC'
+        end
+        # @output.print '<symbol> '
+        # @output.print next_token
+        # @output.puts ' </symbol>'
+        # @tokens.advance
+        # compileExpression
+        @vm_writer.writeArithmetic('+')
         puts_symbol
+        @vm_writer.writePop('pointer', 1)
+        @vm_writer.writePush('that', 0)
       when '('
         @name = @class_name + '.' + @name
         nArgs = 1
@@ -615,6 +662,13 @@ p @symbol_table
         @vm_writer.writePush('constant', @tokens.intVal)
         puts_integer_constant
       when 'STRING_CONST'
+        string_length = @tokens.stringVal.length
+        @vm_writer.writePush('constant', string_length)
+        @vm_writer.writeCall('String.new', 1)
+        string_length.times do |t|
+          @vm_writer.writePush('constant', @tokens.stringVal[t].ord)
+          @vm_writer.writeCall('String.appendChar', 2)
+        end
         puts_string_constant
       when 'KEYWORD'
         if @tokens.keyWord == 'true'
