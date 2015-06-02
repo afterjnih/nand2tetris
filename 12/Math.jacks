@@ -8,39 +8,58 @@
  */
 class Math {
 
-  static Array twoToThe;
+  static int twoToThe;
   static int i, n;
 
     /** Initializes the library. */
     function void init() {
       let twoToThe = Array.new(16);
-      /* var int i, n; */
-      let i = 0;
-      let n = 1;
-      while (i < 16){
-        let twoToThe[i] = n
-        let i = i + 1;
-        let n = n + n;
-      }
+      /* var int i,n; */
+      /* let i = 0; */
+      /* let n = 1; */
+      /* while (i < 16){ */
+      /*   let twoToThe[i] = n; */
+      /*   let i = i + 1; */
+      /*   let n = n + n; */
+      /* } */
+      let twoToThe[0] = 1;
+      let twoToThe[1] = 2;
+      let twoToThe[2] = 4;
+      let twoToThe[3] = 8;
+      let twoToThe[4] = 16;
+      let twoToThe[5] = 32;
+      let twoToThe[6] = 64;
+      let twoToThe[7] = 128;
+      let twoToThe[8] = 256;
+      let twoToThe[9] = 512;
+      let twoToThe[10] = 1024;
+      let twoToThe[11] = 2048;
+      let twoToThe[12] = 4096;
+      let twoToThe[13] = 8192;
+      let twoToThe[14] = 16384;
+      let twoToThe[15] = 16384+16384;
       return;
     }
 
-    function int bit(int x, int j){
-      var int i, num;
-      var boolean ans;
-      let i = 15;
-      while ( i > 0){
-        if (x > twoToThe[i] - 1){
-          let x = x - twoToThe[i];
-          let ans = true
-        }else{
-          let ans = false
-        }
-        if ( i == j){
-          return ans;
-        }
-        let i = i - 1;
-      }
+    function boolean bit(int x, int j){
+      return ~((x & twoToThe[j]) = 0);
+      /* var int i, num; */
+      /* var boolean ans; */
+      /* let i = 15; */
+      /* while ( i > 0){ */
+      /*   if (x > twoToThe[i] - 1){ */
+      /*     let x = x - twoToThe[i]; */
+      /*     let ans = true; */
+      /*   }else{ */
+      /*     let ans = false; */
+      /*   } */
+      /*   if ( i = j){ */
+      /*     let i = 0; */
+      /*     return ans; */
+      /*   } */
+      /*   let i = i - 1; */
+      /* } */
+      /* return ans; */
     }
 
     /** Returns the absolute value of x. */
@@ -56,7 +75,7 @@ class Math {
       let shitedX = x;
       while (i < 16){
         if (Math.bit(y, i)){
-          let sum = sum + shitedX
+          let sum = sum + shitedX;
         }
         let shitedX = shitedX + shitedX;
         let i = i + 1;
@@ -70,7 +89,7 @@ class Math {
       if (y > x){
         return 0;
       }
-      let q = divide(x, 2 * y);
+      let q = Math.divide(x, 2 * y);
       if(x - (2 * q * y) < y){
         return 2 * q;
       }else{
@@ -80,25 +99,24 @@ class Math {
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
-      var int y, n, i, j, exponent_of_2;
+      var int y, n, i, j, k, exponent_of_2;
       let y = 0;
       let n = 16;
       let i = 1;
       while(n/2 - 1 - i > -1){
-        “if 　((y＋2j)2≦x)　 and 　((y＋2j)2＞0)　 then 　y＝y＋2j”
         let j = n / 2 - 1 - i;
-        let exponent_of_2 = 1
+        let exponent_of_2 = 1;
         let k = 0;
         while(j - k > 0){
           let exponent_of_2 = exponent_of_2 * 2;
           let k = k + 1;
         }
-        if (((y + exponent_of_2) * (y + exponent_of_2)) < x + 1) & (((y + exponent_of_2) * (y + exponent_of_2)) > 0){
+        if ((((y + exponent_of_2) * (y + exponent_of_2)) < x + 1) & (((y + exponent_of_2) * (y + exponent_of_2)) > 0)){
           let y = y + exponent_of_2;
         }
         let i = i + 1;
       }
-      reutrn y;
+      return y;
     }
 
     /** Returns the greater number. */
