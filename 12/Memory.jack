@@ -7,26 +7,79 @@
  * Memory operations library.
  */ 
 class Memory {
+  static int memory_length, next_address, heap_base;
+  static Array free_list, next_free_list_pointer_address;
 
     /** Initializes memory parameters. */
     function void init() {
+      let free_list = 2048;
+      let heap_base = 2048;
+      let next_free_list_pointer_address = 2048 + 1;
+      let next_free_list_pointer_address[0] = null;
+      let memory_length = 0;
+      let next_address = 1;
+      let free_list[memory_length] = 16384 - 2048;
+      let free_list[next_address] = null;
+      return;
     }
 
     /** Returns the value of the main memory at the given address. */
     function int peek(int address) {
+      var Array memory;
+      let memory = 0;
+      return memory[address];
     }
 
     /** Sets the value of the main memory at this address
      *  to the given value. */
     function void poke(int address, int value) {
+      var Array memory;
+      let memory = 0;
+      let memory[address] = value;
+      return;
     }
 
     /** finds and allocates from the heap a memory block of the 
      *  specified size and returns a reference to its base address. */
     function int alloc(int size) {
+      var Array block;
+      var int return_address;
+
+      let block =  Memory.get_free_list(size); //return free_list's 2nd address
+      /* let free_list = block; */
+      /* let block[-1] = size + 1; */
+      let return_address = block;
+      return return_address;
+    }
+
+    function Array get_free_list(int size){
+      var int free_list_address, free_memory_number;
+      var Array free_list_address;
+      let free_memory_number = 0;
+      let free_list_address = heap_base;
+      while(free_memory_number < size){
+        if(free_list_address[free_memory_number] = null){
+          let free_memory_number = free_memory_number + 1;
+        }else{
+          let free_list_address = free_list_address + free_memory_number + 1;
+        }
+      }
+      /* while(free_memory_number > size){ */
+      /*   if(free_list_address[free_memory_number] = null){ */
+      /*     let free_memory_number = free_memory_number + 1; */
+      /*   }else{ */
+      /*     let free_list_address = free_list_address + free_memory_number + 1; */
+      /*   } */
+      /* } */
+      /* let next_free_list_pointer_address[0] = free_list_address; */
+      /* let next_free_list_pointer_address = free_list_address + 1; */
+      /* let next_free_list_pointer_address[0] = null; */
+      /* return free_list_address + 1; */
+      return free_list_address;
     }
 
     /** De-allocates the given object and frees its space. */
-    function void deAlloc(int object) {
+    function void deAlloc(Array object) {
+      return;
     }    
 }

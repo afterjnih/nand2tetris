@@ -46,62 +46,29 @@ class Memory {
       var int return_address;
 
       let block =  Memory.get_free_list(size); //return free_list's 2nd address
-      let free_list = block;
-      let block[-1] = size + 1;
+      /* let free_list = block; */
+      /* let block[-1] = size + 1; */
       let return_address = block;
       return return_address;
     }
 
     function Array get_free_list(int size){
-      var int i, free_list_address, free_memory_number;
+      var int free_list_address, free_memory_number;
       var Array free_list_address;
       let free_memory_number = 0;
       let free_list_address = heap_base;
-      while(free_memory_number > size){
+      while(free_memory_number < size){
         if(free_list_address[free_memory_number] = null){
           let free_memory_number = free_memory_number + 1;
         }else{
           let free_list_address = free_list_address + free_memory_number + 1;
-          let i = 0;
         }
       }
-      let next_free_list_pointer_address[0] = free_list_address;
-      let next_free_list_pointer_address = free_list_address + 1;
-      let next_free_list_pointer_address[0] = null;
-      return free_list_address + 1;
+      return free_list_address;
     }
 
     /** De-allocates the given object and frees its space. */
     function void deAlloc(Array object) {
-      var int disposable_size, i;
-      var Array previous_pointer;
-      let disposable_size = object[-1];
-      let i = 0;
-
-      if (~(null = Memory.previous_list(object))){
-        let previous_pointer = Memory.previous_list(object);
-        let previous_pointer[0] = object[0];
-      }
-      while(i < disposable_size){
-        do Memory.poke(object - 1 + i, null);
-        /* let object[-1 + i] = null; */
-        let i = i + 1;
-      }
       return;
     }    
-
-    function Array previous_list(Array list){
-      /* var int pointer; */
-      var Array pointer;
-
-      /* let pointer = heap_base[1]; */
-      let pointer = free_list;
-      while(~(pointer[1] = null) & (pointer[1] < list)){
-        /* if (pointer[1] = (list - 1)){ */
-          /* return pointer;  */
-        /* } */
-        let pointer = pointer[1];
-      }
-      return pointer;
-    }
 }
